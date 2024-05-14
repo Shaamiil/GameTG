@@ -1,0 +1,1 @@
+from . import message_wordle, command_wordle, commands, message_21, password
