@@ -1,9 +1,9 @@
 from aiogram import Router, F, types
-from aiogram.client import bot
 from aiogram.fsm.context import FSMContext
 from aiogram.filters import StateFilter
 
-from function_password import special_symbols, months, roman_numerals, str_digits, russian_letter, russian_letter_upper
+from function_password import special_symbols, months, roman_numerals, str_digits, russian_letter, russian_letter_upper, \
+    english_letter_upper, english_letter, wordle_day
 from keyboards import reply
 
 password_router = Router()
@@ -16,16 +16,29 @@ async def password_handle(message: types.Message, state: FSMContext):
 
 
 @password_router.message(StateFilter("password"))
-async def password(message: types.Message):
-    include_letter = False
+async def password(message: types.Message, state: FSMContext):
+    list_letter = []
+    for letter in message.text:
+        if letter in russian_letter or letter in russian_letter_upper or letter in english_letter_upper \
+                or letter in english_letter:
+            if letter.lower() not in list_letter:
+                list_letter.append(letter.lower())
+            else:
+                return await message.answer(text="В вашем пароле не должно быть одинаковых букв")
+    include_russian = False
+    include_english = False
     for letter in russian_letter:
         if letter in message.text:
-            include_letter = True
+            include_russian = True
             break
-    if not include_letter:
+    for letter in english_letter:
+        if letter in message.text:
+            include_english = True
+            break
+    if not (include_russian or include_english):
         return await message.answer(text="Пароль должен содеражть буквы")
-    if len(message.text) < 5:
-        return await message.answer("Пароль не должен быть короче 5 символов")
+    if len(message.text) < 10:
+        return await message.answer("Пароль не должен быть короче 10 символов")
     include_digits = False
     for digit in str_digits:
         if digit in message.text:
@@ -33,12 +46,12 @@ async def password(message: types.Message):
             break
     if not include_digits:
         return await message.answer("Пароль должен содержать цифры")
-    include_letter_upper = False
-    for letter in russian_letter_upper:
+    include_upper = False
+    for letter in russian_letter_upper + english_letter_upper:
         if letter in message.text:
-            include_letter_upper = True
+            include_upper = True
             break
-    if not include_letter_upper:
+    if not include_upper:
         return await message.answer("Пароль должен содержать заглавные буквы")
     include_symbols = False
     for symbols in special_symbols:
@@ -47,12 +60,16 @@ async def password(message: types.Message):
             break
     if not include_symbols:
         return await message.answer("Пароль должен содержать спецсимволы")
-    for i in message.text:
-        listt = []
-        if i in str_digits:
-            listt.append(int(i))
-            if sum(listt) != 25:
-                return await message.answer("Сумма всех цифр в пароле должна быть 25")
+    listt = []
+    for number in message.text:
+        if number in str_digits:
+            listt.append(int(number))
+    if sum(listt) <= 25:
+        return await message.answer("Сумма всех цифр в пароле должна быть больше 25")
+    if sum(listt) % 3 != 0:
+        return await message.answer("Сумма всех цифр должна быть кратна 3")
+    # if str(sum(listt)*sum(listt)) not in message.text:
+    #     return await message.answer(text="В вашем пароле должен быть квадрат суммы всех ваших чисел")
     include_month = False
     for month in months:
         if month in message.text:
@@ -67,10 +84,27 @@ async def password(message: types.Message):
             break
     if not include_roman_numerals:
         return await message.answer("Ваш пароль должен включать хотя бы одну римскую цифру")
-    if "XXXV" not in message.text:
-        return await message.answer("Ваша римская цифра должна быть равна 35")
-    if "ee610c" not in message.text:
+    if "LXV" not in message.text:
+        return await message.answer("Ваша римская цифра должна быть равна 65")
+    if "qGphJD" not in message.text and "DJhpGq" not in message.text:
         await message.answer_photo(
-            photo="https://avatars.mds.yandex.net/i?id=b63075de51d98e8458544400b7815317_sr-5279278-images-thumbs&n=13")
-        return await message.answer("Ваш пароль должен содержать эту каптчу")
-    await message.answer(text="Молодец, ты придуамл пароль", reply_markup=reply.play)
+            photo="https://avatars.mds.yandex.net/i?id=27a8438251a808e94c9b7c3b76df165cf3daaff0-12497202-images-thumbs&n=13")
+        return await message.answer("Ваш пароль должен содержать эту каптчу(на английском)")
+    wordle = wordle_day()
+    if wordle not in message.text:
+        await message.answer(
+            "Ваш пароль должен включать слово дня из игры <a href='https://www.nytimes.com/games/wordle/index.html'>"
+            "Wordle</a>", )
+    await message.answer("Теперь введи этот пароль наоборот)")
+    await state.update_data({"password": message.text})
+    await state.set_state("reverse")
+
+
+@password_router.message(StateFilter("reverse"))
+async def reverse_password(message: types.Message, state: FSMContext):
+    data = await state.get_data()
+    passwordd = data.get("password")
+    new_password = passwordd[::-1]
+    if message.text != new_password:
+        return await message.answer("Неправильно! Введите свой пароль наоборот")
+    await message.answer(text="Молодец, ты придумал(а) пароль", reply_markup=reply.play)

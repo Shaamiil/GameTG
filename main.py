@@ -1,7 +1,8 @@
 import asyncio
 from aiogram import Bot, Dispatcher
 
-from handlers import command_wordle, message_wordle, commands, message_21, password
+from handlers import command_wordle, message_wordle, commands, message_21, password, roulette
+from handlers_online import message_21_on
 
 
 async def main():
@@ -12,7 +13,9 @@ async def main():
         command_wordle.commandWordle_router,
         commands.commands_router,
         message_21.message21_router,
-        password.password_router
+        password.password_router,
+        roulette.roulette_router,
+        message_21_on.message21on_router
     )
     await bot.delete_webhook(drop_pending_updates=True)
     await dp.start_polling(bot)

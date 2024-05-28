@@ -18,7 +18,8 @@ game_selection = ReplyKeyboardMarkup(
             KeyboardButton(text="🃏21")
         ],
         [
-            KeyboardButton(text="🔒 Password")
+            KeyboardButton(text="🔒 Password"),
+            KeyboardButton(text="🩸 Buckshot Roulette")
         ]
     ],
     resize_keyboard=True
