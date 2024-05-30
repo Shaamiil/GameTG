@@ -14,9 +14,9 @@ game_state = {}
 @roulette_router.message(F.text == "🩸 Buckshot Roulette")
 async def rule_roulette(message: types.Message):
     await message.answer(
-        text="C кем будете играть?", reply_markup=reply_roulette.players
+        text="Игра еще в разработке"
     )
-
+# reply_markup=reply_roulette.players
 
 @roulette_router.message(F.text == "📕 Правила")
 async def rules(message: types.Message):

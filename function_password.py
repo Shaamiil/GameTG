@@ -1,4 +1,8 @@
-import requests
+import asyncio
+import random
+
+import aiohttp
+from datetime import date
 
 str_digits = ['1', '2', '3', '4', '5', '6', '7', '8', '9', '0']
 
@@ -66,7 +70,28 @@ def reverse(message: str):
     return new_word
 
 
-def wordle_day():
-    response = requests.get(url='https://www.nytimes.com/svc/wordle/v2/2024-05-28.json')
-    wordle = (response.json()["solution"])
-    return str(wordle)
+async def wordle_day():
+    """Получает слово дня Wordle с сайта New York Times."""
+    today = date.today()
+    today_str = today.strftime("%Y-%m-%d")
+    async with aiohttp.ClientSession() as session:
+        response = await session.get(
+            url=f'https://www.nytimes.com/svc/wordle/v2/{today_str}.json'
+        )
+        day_word = (await response.json())["solution"]
+    return str(day_word)
+
+
+print(asyncio.run(wordle_day()))
+
+
+dict_country = {
+    "https://telegra.ph/file/3c7f34b22eb71f460e45b.jpg": "Казахстан",
+    "https://telegra.ph/file/f3c61d2b02797c727efae.jpg": "Нидерланды",
+    "https://telegra.ph/file/8919fccd4f3cd90546c4d.jpg": "США",
+    "https://telegra.ph/file/30649355f4335f2eed305.jpg": "Швеция"
+}
+
+
+def dict_country_random():
+    return random.choice(list(dict_country.keys()))

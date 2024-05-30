@@ -3,7 +3,7 @@ from aiogram.fsm.context import FSMContext
 from aiogram.filters import StateFilter
 
 from function_password import special_symbols, months, roman_numerals, str_digits, russian_letter, russian_letter_upper, \
-    english_letter_upper, english_letter, wordle_day
+    english_letter_upper, english_letter, wordle_day, elements, dict_country_random, dict_country
 from keyboards import reply
 
 password_router = Router()
@@ -17,6 +17,10 @@ async def password_handle(message: types.Message, state: FSMContext):
 
 @password_router.message(StateFilter("password"))
 async def password(message: types.Message, state: FSMContext):
+    wordle = await wordle_day()
+    country = dict_country_random()
+    if " " in message.text:
+        return await message.answer("В вашем пароле не должно быть пробелов")
     list_letter = []
     for letter in message.text:
         if letter in russian_letter or letter in russian_letter_upper or letter in english_letter_upper \
@@ -90,12 +94,43 @@ async def password(message: types.Message, state: FSMContext):
         await message.answer_photo(
             photo="https://avatars.mds.yandex.net/i?id=27a8438251a808e94c9b7c3b76df165cf3daaff0-12497202-images-thumbs&n=13")
         return await message.answer("Ваш пароль должен содержать эту каптчу(на английском)")
-    wordle = wordle_day()
+    include_elements = False
+    for element in elements:
+        if element in message.text:
+            include_elements = True
+            break
+    if not include_elements:
+        return await message.answer("Ваш пароль должен включать любой двухбуквенный символ из таблицы Менделлева")
+    await message.answer(
+        "Ваш пароль должен включать слово дня из игры <a href='https://www.nytimes.com/games/wordle/index.html'>"
+        "Wordle</a>", )
+    await state.update_data({"wordle": wordle,
+                             "country": country})
+    await state.set_state("wordle")
+
+
+@password_router.message(StateFilter("wordle"))
+async def day_wordle(message: types.Message, state: FSMContext):
+    data = await state.get_data()
+    wordle = data.get("wordle")
+    country = data.get("country")
     if wordle not in message.text:
-        await message.answer(
-            "Ваш пароль должен включать слово дня из игры <a href='https://www.nytimes.com/games/wordle/index.html'>"
-            "Wordle</a>", )
-    await message.answer("Теперь введи этот пароль наоборот)")
+        return await message.answer("Вы ввели не то слово")
+    await message.answer("Ваш пароль должен включать название страны с картинки")
+    await message.answer_photo(
+        photo=country)
+    await state.update_data({"password": message.text})
+    await state.set_state("country")
+
+
+@password_router.message(StateFilter("country"))
+async def img_country(message: types.Message, state: FSMContext):
+    data = await state.get_data()
+    country = data.get("country")
+    passwordd = data.get("password")
+    if dict_country[country] not in message.text:
+        return await message.answer("Неправильно(")
+    await message.answer("Теперь введи свой пароль наоборот")
     await state.update_data({"password": message.text})
     await state.set_state("reverse")
 
